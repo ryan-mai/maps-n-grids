@@ -158,7 +158,6 @@ class formManager {
     }
 
     geocodeLookup(res, popup) {
-        console.log(res, popup)
         if (!res || res.length === 0) {
             this.errorEl.innerText = 'No city/country found :(';
             return;
@@ -167,13 +166,40 @@ class formManager {
         const result = res[0];
         const loc = result.center;
 
-        console.log(result, loc);
-        const marker = L.marker(loc).addTo(this.map);
+        const marker = L.marker(loc, { draggable: true }).addTo(this.map);
         if (popup) marker.bindPopup(popup).openPopup();
+        marker.on('dragend', (e) => {
+            const { lat, lng } = e.target.getLatLng();
+            this.reverseGeocode(lat, lng, marker);
+        });
 
         const zoom = Math.max(this.map.getZoom(), 8)
         this.map.setView(loc, zoom);
     }
+
+    reverseGeocode(lat, lng, marker) {
+        this.geocoderService.reverse({ lat, lng }, this.map.getZoom())
+            .then((res) => {
+                if (!res || res.length === 0) {
+                    console.error('Could not find city/country');
+                    return;
+                }
+
+                const result = res[0];
+                const name = result.name || (result.properties && result.properties.display_name) || '???';
+                const safeName = this.escape(String(name));
+                
+                if (marker && typeof marker.bindPopup === 'function') {
+                    marker.bindPopup(`<strong>${safeName}</strong>`).openPopup();
+                } else {
+                    this.errorEl.innerText = safeName
+                };
+            })
+            .catch((err) => {
+                console.error(err);
+            });
+    }
+
     success(pos) {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
