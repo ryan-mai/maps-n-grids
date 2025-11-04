@@ -1,8 +1,9 @@
 class formManager {
     constructor() {
         this.map = L.map(document.getElementById('map'));
-        this.marker = null,
-        this.circle = null,
+        this.geoMarker = null;
+        this.geoCircle = null;
+        this.dropMarker = null;
         this.zoomed = false;
 
         this.city = document.getElementById('city');
@@ -10,8 +11,11 @@ class formManager {
         this.desc = document.getElementById('desc');
         this.form = document.getElementById('form');
         this.errorEl = document.getElementById('error');
+        this.preview = document.getElementById('preview');
 
         this.isUploaded = false;
+        this.uploadedUrl = null;
+        this.pendingCoord = null;
         this.init();
     }
 
@@ -23,17 +27,32 @@ class formManager {
         }).addTo(this.map);
 
         var trips = [
-            {lat: 48.85838902073378, lng: 2.294531041509247, title: "Paris", desc: "<img src='/img/eiffel_tower.jpg' width='200'><p>The beautiful Eiffel Tower lit up at night!</p>"}
-        ]
+            {
+                lat: 48.85838902073378,
+                lng: 2.294531041509247,
+                title: "Paris",
+                desc: "<img src='/img/eiffel_tower.jpg' width='200'><p>The beautiful Eiffel Tower lit up at night!</p>"
+            }
+        ];
+
         trips.forEach((trip) => {
-            const tripMarker = L.marker([trip.lat, trip.lng, trip.title]).addTo(map);
+            const tripMarker = L.marker([trip.lat, trip.lng], { title: trip.title }).addTo(this.map);
             tripMarker.bindPopup("<img src='/img/eiffel_tower.jpg'><p>The beautiful Eiffel Tower at night!</p>")
         });
-        // navigator.geolocation.watchPosition(this.success(), this.error());
+
+        this.map.on('click', (e) => {
+            this.pendingCoord = e.latlng;
+            if (this.dropMarker) this.map.removeLayer(this.dropMarker);
+            this.dropMarker = L.marker(e.latlng).addTo(this.map);
+            this.errorEl.innerText = '';
+        });
+
         this.pic.addEventListener('change', (e) => { 
             const file = e.target.files && e.target.files[0];
             if (file) this.fileUpload(file)
         });
+
+        this.form.addEventListener('submit', this.handleSubmit.bind(this));
     }
 
     fileUpload(file) {
@@ -47,12 +66,65 @@ class formManager {
             uploadImg.onerror = (err) => this.errorEl.innerText = `Please upload a file, got errr: ${err}`;        
             uploadImg.onload = () => {
                 this.isUploaded = true;
-                const preview = document.getElementById('preview');
-                if (preview) preview.src = ev.target.result;
+                this.uploadedUrl = ev.target.result;
+
+                if (this.preview) {
+                    this.preview.src = ev.target.result;
+                    this.preview.style.display = 'block';
+                }
+                this.errorEl.innerText = '';
             };
+            uploadImg.src = ev.target.result;
         };
         reader.onerror = (err) => this.errorEl.innerText = `So cooked, got errr: ${err}`;
         reader.readAsDataURL(file);
+    }
+
+    handleSubmit(e) {
+        e.preventDefault();
+        const city = (this.city.value || '').trim();
+        const desc = (this.desc.value || '').trim();
+
+        if (!this.pendingCoord) {
+            this.errorEl.innerText = 'Click map to choose location...';
+            return;
+        }
+
+        if (!city || !desc) {
+            this.errorEl.innerText = 'City and description needed!!';
+            return;
+        }
+
+        const safeCity = this.escape(city);
+        const safeDesc = this.escape(desc);
+        const imageHtml = this.isUploaded && this.uploadedUrl
+            ? `<img src="${this.uploadedUrl}" width="200" style="display:block;margin-bottom:8px;">`
+            : '';
+
+        const popupHtml = `
+            ${imageHtml}
+            <strong>${safeCity}</strong>
+            <p style="margin:6px 0 0;">${safeDesc}</p>
+        `;
+
+        const marker = L.marker(this.pendingCoord).addTo(this.map);
+        marker.bindPopup(popupHtml).openPopup();
+
+        this.form.reset();
+        if (this.preview) {
+            this.preview.src = '';
+            this.preview.style.display = 'none';
+        }
+        this.isUploaded = false;
+        this.uploadedUrl = null;
+        this.pendingCoord = null;
+        if (this.dropMarker) {
+            this.map.removeLayer(this.dropMarker);
+            this.dropMarker = null;
+        }
+        this.errorEl.innerText = '';
+
+        this.map.setView(marker.getLatLng(), Math.max(this.map.getZoom(), 8));
     }
 
     success(pos) {
@@ -65,23 +137,30 @@ class formManager {
             this.map.removeLayer(circle);
         }
 
-        this.marker = L.marker([lat, lng]).addTo(map);
-        this.circle = L.circle([lat, lng], { radius: acc }).addTo(map);
+        this.geoMarker = L.marker([lat, lng]).addTo(map);
+        this.geoCircle = L.circle([lat, lng], { radius: acc }).addTo(map);
         
         if (!this.zoomed) {
-            this.map.fitBounds(circle.getBounds());
+            this.map.fitBounds(this.geoCircle.getBounds());
             this.zoomed = true;
         }
-
-        this.map.setView([lat, lng]);
+        // this.map.setView([lat, lng]);
     }
 
     error(err) {
         if (err.code === 1) alert('Please enable access');
-        else alert('Could not access geolocation :(');
+        else this.errorEl.innerText = 'Could not access your location :(';
     }
 
-    pushInfo() {
-
+    escape(s) {
+        return s.replace(/[&<>"']/g, (c) => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        })[c]);
     }
 }
+
+window.addEventListener('DOMContentLoaded', () => new formManager());
