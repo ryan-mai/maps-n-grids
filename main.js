@@ -1,8 +1,9 @@
 class formManager {
     constructor() {
         this.map = L.map(document.getElementById('map'));
-        this.geocoder = L.Control.geocoder({ defaultMarkGeocode: true });
-
+        this.geocoderControl = L.Control.geocoder({ defaultMarkGeocode: true });
+        this.geocoderService = L.Control.Geocoder.nominatim();
+        
         this.geoMarker = null;
         this.geoCircle = null;
         this.dropMarker = null;
@@ -29,12 +30,23 @@ class formManager {
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(this.map);
 
-        this.geocoder.on('markgeocode', (e) => {
+        this.geocoderControl.on('markgeocode', (e) => {
             const loc = e.geocode.center;
             L.marker(loc).addTo(this.map);
             this.map.setView(loc, 13);
-        });
-        this.geocoder.addTo(this.map);
+
+            // Approximate location
+            var bbox = e.geocode.bbox;
+            var poly = new L.Polygon([
+            bbox.getSouthEast(),
+            bbox.getNorthEast(),
+            bbox.getNorthWest(),
+            bbox.getSouthWest()
+            ]).addTo(this.map);
+            this.map.fitBounds(poly.getBounds());
+        })
+
+        this.geocoderControl.addTo(this.map);
         
 
         var trips = [
@@ -96,10 +108,10 @@ class formManager {
         const city = (this.city.value || '').trim();
         const desc = (this.desc.value || '').trim();
 
-        if (!this.pendingCoord) {
-            this.errorEl.innerText = 'Click map to choose location...';
-            return;
-        }
+        // if (!this.pendingCoord) {
+        //     this.errorEl.innerText = 'Click map to choose location...';
+        //     return;
+        // }
 
         if (!city || !desc) {
             this.errorEl.innerText = 'City and description needed!!';
@@ -118,8 +130,15 @@ class formManager {
             <p style="margin:6px 0 0;">${safeDesc}</p>
         `;
 
-        const marker = L.marker(this.pendingCoord).addTo(this.map);
-        marker.bindPopup(popupHtml).openPopup();
+        this.geocoderService.geocode(safeCity)
+            .then((results) => this.geocodeLookup(results, popupHtml))
+            .catch((err) => {
+                console.error('geocode error', err);
+                this.errorEl.innerText = 'Geocoding failed';
+            });
+        
+            // const marker = L.marker(this.pendingCoord).addTo(this.map);
+        // marker.bindPopup(popupHtml).openPopup();
 
         this.form.reset();
         if (this.preview) {
@@ -135,9 +154,26 @@ class formManager {
         }
         this.errorEl.innerText = '';
 
-        this.map.setView(marker.getLatLng(), Math.max(this.map.getZoom(), 8));
+        // this.map.setView(marker.getLatLng(), Math.max(this.map.getZoom(), 8));
     }
 
+    geocodeLookup(res, popup) {
+        console.log(res, popup)
+        if (!res || res.length === 0) {
+            this.errorEl.innerText = 'No city/country found :(';
+            return;
+        };
+
+        const result = res[0];
+        const loc = result.center;
+
+        console.log(result, loc);
+        const marker = L.marker(loc).addTo(this.map);
+        if (popup) marker.bindPopup(popup).openPopup();
+
+        const zoom = Math.max(this.map.getZoom(), 8)
+        this.map.setView(loc, zoom);
+    }
     success(pos) {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
@@ -146,8 +182,8 @@ class formManager {
         if (this.geoMarker) this.map.removeLayer(this.geoMarker);
         if(this.geoCircle) this.map.removeLayer(this.geoCircle);
 
-        this.geoMarker = L.marker([lat, lng]).addTo(map);
-        this.geoCircle = L.circle([lat, lng], { radius: acc }).addTo(map);
+        this.geoMarker = L.marker([lat, lng]).addTo(this.map);
+        this.geoCircle = L.circle([lat, lng], { radius: acc }).addTo(this.map);
         
         if (!this.zoomed) {
             this.map.fitBounds(this.geoCircle.getBounds());
