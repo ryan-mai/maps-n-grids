@@ -1,6 +1,8 @@
 class formManager {
     constructor() {
         this.map = L.map(document.getElementById('map'));
+        this.geocoder = L.Control.geocoder({ defaultMarkGeocode: true });
+
         this.geoMarker = null;
         this.geoCircle = null;
         this.dropMarker = null;
@@ -21,10 +23,19 @@ class formManager {
 
     init() {
         this.map.setView([51.05, -0.09], 1);
+
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(this.map);
+
+        this.geocoder.on('markgeocode', (e) => {
+            const loc = e.geocode.center;
+            L.marker(loc).addTo(this.map);
+            this.map.setView(loc, 13);
+        });
+        this.geocoder.addTo(this.map);
+        
 
         var trips = [
             {
@@ -132,10 +143,8 @@ class formManager {
         const lng = pos.coords.longitude;
         const acc = pos.coords.accuracy;
 
-        if (this.marker) {
-            this.map.removeLayer(marker);
-            this.map.removeLayer(circle);
-        }
+        if (this.geoMarker) this.map.removeLayer(this.geoMarker);
+        if(this.geoCircle) this.map.removeLayer(this.geoCircle);
 
         this.geoMarker = L.marker([lat, lng]).addTo(map);
         this.geoCircle = L.circle([lat, lng], { radius: acc }).addTo(map);
