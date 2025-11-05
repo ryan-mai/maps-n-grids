@@ -61,6 +61,7 @@ class formManager {
         trips.forEach((trip) => {
             const tripMarker = L.marker([trip.lat, trip.lng], { title: trip.title }).addTo(this.map);
             tripMarker.bindPopup("<img src='/img/eiffel_tower.jpg'><p>The beautiful Eiffel Tower at night!</p>")
+            this.editMarker(tripMarker, trip.desc);
         });
 
         this.map.on('click', (e) => {
@@ -68,6 +69,44 @@ class formManager {
             if (this.dropMarker) this.map.removeLayer(this.dropMarker);
             this.dropMarker = L.marker(e.latlng).addTo(this.map);
             this.errorEl.innerText = '';
+
+            const container = L.DomUtil.create('div', 'edit-popup');
+            const textArea =L.DomUtil.create('textarea', '', container);
+            textArea.style.width = '220px';
+            textArea.rows = 4;
+            textArea.value = this.desc.value || '';
+
+            const btnWrap = L.DomUtil.create('div', '', container);
+            btnWrap.style.marginTop = '6px';
+
+            const saveBtn = L.DomUtil.create('button', '', btnWrap);
+            saveBtn.type = 'button';
+            saveBtn.textContent = 'Save';
+            saveBtn.style.marginRight = '6px';
+
+            const cancelBtn = L.DomUtil.create('button', '', btnWrap);
+            cancelBtn.type = 'button';
+            cancelBtn.textContent = 'Cancel';
+
+            L.DomEvent.disableClickPropagation(container);
+            L.DomEvent.disableScrollPropagation(container);
+
+            L.DomEvent.on(saveBtn, 'click', (ev) => {
+                L.DomEvent.stop(ev);
+                const updateDesc = textArea.value.trim();
+                this.desc.value = updateDesc;
+                if (this.dropMarker) {
+                    this.dropMarker.bindPopup(`<p>${this.escape(updateDesc)}</p>`);
+                }
+                this.map.closePopup();
+            });
+
+            L.DomEvent.on(cancelBtn, 'click', (ev) => {
+                L.DomEvent.stop(ev);
+                this.map.closePopup();
+            });
+
+            this.dropMarker.bindPopup(container).openPopup();
         });
 
         this.pic.addEventListener('change', (e) => { 
@@ -76,6 +115,50 @@ class formManager {
         });
 
         this.form.addEventListener('submit', this.handleSubmit.bind(this));
+    }
+
+    editMarker(marker, desc) {
+        let currentDesc = desc || '';
+
+        const viewPopup = () => {
+            const container = L.DomUtil.create('div', 'edit-popup');
+            const textArea =L.DomUtil.create('textarea', '', container);
+            textArea.style.width = '220px';
+            textArea.rows = 4;
+            textArea.value = this.desc.value || '';
+
+            const btnWrap = L.DomUtil.create('div', '', container);
+            btnWrap.style.marginTop = '6px';
+
+            const saveBtn = L.DomUtil.create('button', '', btnWrap);
+            saveBtn.type = 'button';
+            saveBtn.textContent = 'Save';
+            saveBtn.style.marginRight = '6px';
+
+            const cancelBtn = L.DomUtil.create('button', '', btnWrap);
+            cancelBtn.type = 'button';
+            cancelBtn.textContent = 'Cancel';
+
+            L.DomEvent.disableClickPropagation(container);
+            L.DomEvent.disableScrollPropagation(container);
+
+            L.DomEvent.on(saveBtn, 'click', (ev) => {
+                L.DomEvent.stop(ev);
+                const updateDesc = textArea.value.trim();
+                this.desc.value = updateDesc;
+                if (this.dropMarker) {
+                    this.dropMarker.bindPopup(`<p>${this.escape(updateDesc)}</p>`);
+                }
+                this.map.closePopup();
+            });
+
+            L.DomEvent.on(cancelBtn, 'click', (ev) => {
+                L.DomEvent.stop(ev);
+                this.map.closePopup();
+            });
+
+            this.dropMarker.bindPopup(container).openPopup();
+        }
     }
 
     fileUpload(file) {
