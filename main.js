@@ -117,48 +117,71 @@ class formManager {
         this.form.addEventListener('submit', this.handleSubmit.bind(this));
     }
 
+    strip(html) {
+        const div = document.createElement('div');
+        div.innerHTML = html || '';
+        return div.textContent || div.innerText || '';
+    }
+
     editMarker(marker, desc) {
         let currentDesc = desc || '';
 
         const viewPopup = () => {
             const container = L.DomUtil.create('div', 'edit-popup');
-            const textArea =L.DomUtil.create('textarea', '', container);
-            textArea.style.width = '220px';
-            textArea.rows = 4;
-            textArea.value = this.desc.value || '';
+            const view = L.DomUtil.create('div', '', container);
+            view.innerHTML = currentDesc || '<p>(no description)</p>';
 
             const btnWrap = L.DomUtil.create('div', '', container);
             btnWrap.style.marginTop = '6px';
-
-            const saveBtn = L.DomUtil.create('button', '', btnWrap);
-            saveBtn.type = 'button';
-            saveBtn.textContent = 'Save';
-            saveBtn.style.marginRight = '6px';
-
-            const cancelBtn = L.DomUtil.create('button', '', btnWrap);
-            cancelBtn.type = 'button';
-            cancelBtn.textContent = 'Cancel';
+            const editBtn = L.DomUtil.create('button', '', btnWrap);
+            editBtn.type = 'button';
+            editBtn.textContent = 'Edit';
 
             L.DomEvent.disableClickPropagation(container);
             L.DomEvent.disableScrollPropagation(container);
 
-            L.DomEvent.on(saveBtn, 'click', (ev) => {
+            L.DomEvent.on(editBtn, 'click', (ev) => {
                 L.DomEvent.stop(ev);
-                const updateDesc = textArea.value.trim();
-                this.desc.value = updateDesc;
-                if (this.dropMarker) {
-                    this.dropMarker.bindPopup(`<p>${this.escape(updateDesc)}</p>`);
-                }
-                this.map.closePopup();
+                container.innerHTML = '';
+
+                const textArea = L.DomUtil.create('textarea', '', container);
+                textArea.style.width = '220px';
+                textArea.rows = 4;
+                textArea.value = this.desc.value || this.strip(currentDesc);
+
+                const editorBtn = L.DomUtil.create('div', '', container);
+                editorBtn.style.marginTop = '6px';
+
+                const saveBtn = L.DomUtil.create('button', '', editorBtn);
+                saveBtn.type = 'button';
+                saveBtn.textContent = 'Save';
+                saveBtn.style.marginRight = '6px';
+                
+                const cancelBtn = L.DomUtil.create('button', '', editorBtn);
+                cancelBtn.type = 'button';
+                cancelBtn.textContent = 'Cancel';
+
+                L.DomEvent.on(saveBtn, 'click', (ev2) => {
+                    L.DomEvent.stop(ev2);
+                    const updateText = textArea.value.trim();
+                    this.desc.value = updateText || '';
+                    
+                    currentDesc = `<p>${this.escape(updateText)}</p>`;
+                    marker.bindPopup(currentDesc).openPopup();
+                });
+
+                L.DomEvent.on(cancelBtn, 'click', (ev2) => {
+                    L.DomEvent.stop(ev2);
+                    this.map.closePopup();
+                });
             });
 
-            L.DomEvent.on(cancelBtn, 'click', (ev) => {
-                L.DomEvent.stop(ev);
-                this.map.closePopup();
-            });
+            return container;
+        };
 
-            this.dropMarker.bindPopup(container).openPopup();
-        }
+        marker.on('click', (e) => {
+            marker.bindPopup(viewPopup()).openPopup();
+        })
     }
 
     fileUpload(file) {
@@ -250,11 +273,13 @@ class formManager {
         const loc = result.center;
 
         const marker = L.marker(loc, { draggable: true }).addTo(this.map);
-        if (popup) marker.bindPopup(popup).openPopup();
         marker.on('dragend', (e) => {
             const { lat, lng } = e.target.getLatLng();
             this.reverseGeocode(lat, lng, marker);
         });
+
+        this.editMarker(marker, popup || '');
+        if (popup) marker.openPopup();
 
         const zoom = Math.max(this.map.getZoom(), 8)
         this.map.setView(loc, zoom);
