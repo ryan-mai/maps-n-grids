@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Cluste</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="map"></div>
+    <div id="error"></div>
+    <form id="form" action="/" method="post" enctype="multipart/form-data">
+        <div>
+            <label for="city">City Name</label>
+            <input id="city" name="city" type="text" required>
+        </div>
+        <div>
+            <label for="pic">Picture</label>
+            <input id="pic" name="pic" type="file" accept="image/*">
+            <img id="preview" alt="preview" style="max-width:200px; display:block; margin-top:8px;">
+        </div>
+        <div>
+            <label for="desc">description</label>
+            <input id="desc" name="desc" type="text" required>
+        </div>
+        <button type="submit">Submit</button>
+    </form>
+  <script src="main.js"></script>
+</body>
+</html>
