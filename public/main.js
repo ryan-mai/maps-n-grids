@@ -37,10 +37,14 @@ class formManager {
         this.countryScores = { 'Canada': 67, 'USA': 4, 'India': 101, 'Japan': 124 };
         this.leaderboard = document.getElementById('leaderboard');
 
+        this.countryBounds = null;
+
         this.init();
     }
 
-    init() {
+    async init() {
+        await this.loadCountries();
+
         this.map.setView([51.05, -0.09], 1);
 
         L.tileLayer('/tiles/{z}/{x}/{y}.png', {
@@ -53,7 +57,7 @@ class formManager {
         this.geocodeMap();
         this.handleTrips();
 
-        this.renderHexBins(48);
+        this.renderHexBins(36);
         this.map.on('moveend zoomend', () => this.renderHexBins(48));
 
         // this.renderHeatGrid(this.gridCellSize);
@@ -319,6 +323,13 @@ class formManager {
         };
         reader.onerror = (err) => this.errorEl.innerText = `So cooked, got errr: ${err}`;
         reader.readAsDataURL(file);
+    }
+
+    async loadCountries() {
+        const url = 'https://r2.datahub.io/clvyjaryy0000la0cxieg4o8o/main/raw/data/countries.geojson';
+        const res = await fetch(url);
+        const data = res.json();
+        this.countryBounds = data;
     }
 
     async handleSubmit(e) {
