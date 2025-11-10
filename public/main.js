@@ -58,7 +58,7 @@ class FormManager {
 
         this.map.setView([51.05, -0.09], 1);
 
-        L.tileLayer('/tiles/{z}/{x}/{y}.png', {
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             minZoom: 1,
             maxZoom: 15,
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
