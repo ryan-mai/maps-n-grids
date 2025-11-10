@@ -1,4 +1,4 @@
-class formManager {
+class FormManager {
     constructor() {
         this.map = L.map(document.getElementById('map'));
         this.geocoderControl = L.Control.geocoder({ defaultMarkGeocode: true });
@@ -39,11 +39,20 @@ class formManager {
 
         this.countryBounds = null;
 
+        this.turf = null;
+
         this.init();
     }
 
     async init() {
-        await this.loadCountries();
+        if (window.TurfHelper) {
+            this.turf = new TurfHelper(this.map, () => this.trips, () => this.actions);
+            try {
+                await this.turf.loadCountries();
+            } catch(err) {
+                console.error(err);
+            }
+        }
 
         this.map.setView([51.05, -0.09], 1);
 
@@ -57,9 +66,10 @@ class formManager {
         this.geocodeMap();
         this.handleTrips();
 
-        this.renderHexBins(36);
-        this.map.on('moveend zoomend', () => this.renderHexBins(48));
+        // this.renderHexBins(36);
+        // this.map.on('moveend zoomend', () => this.renderHexBins(48));
 
+        if (this.turf) this.turf.drawPolygons();
         // this.renderHeatGrid(this.gridCellSize);
 
         this.mapClick();
@@ -68,6 +78,7 @@ class formManager {
 
         this.updateLeaderboard();
     }
+
 
     addHexGrid(radiusDeg = 1) {
         radiusDeg = Number(radiusDeg) || 0;
@@ -134,7 +145,8 @@ class formManager {
             tripMarker.bindPopup("<img src='/img/eiffel_tower.jpg'><p>The beautiful Eiffel Tower at night!</p>")
             this.editMarker(tripMarker, trip.desc, index);
         });
-        this.renderHexBins(48);
+        // this.renderHexBins(48);
+        if (this.turf) this.turf.drawPolygons();
     }
 
     changePic() {
@@ -288,7 +300,8 @@ class formManager {
                     }
                     try { marker.off(); } catch(err) { console.error(err)};
                     this.map.closePopup();
-                    this.renderHexBins(48);
+                    // this.renderHexBins(48);
+                    if (this.turf) this.turf.drawPolygons();
                 });
             });
 
@@ -362,7 +375,9 @@ class formManager {
             this.updateLeaderboard();
 
             this.actions.push({ lat, lng, cat });
-            this.renderHexBins(48);
+            // this.renderHexBins(48);
+
+            if (this.turf) this.turf.drawPolygons();
         //     .then((results) => {
         //         const coords = this.geocodeLookup(results, popupHtml);
         //         if (coords) {
@@ -635,4 +650,4 @@ class formManager {
     }
 }
 
-window.addEventListener('DOMContentLoaded', () => new formManager());
+window.addEventListener('DOMContentLoaded', () => new FormManager());
