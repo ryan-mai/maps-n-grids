@@ -25,12 +25,6 @@ class FormManager {
         this.pendingCoord = null;
 
         this.trips = [
-            {
-                lat: 48.85838902073378,
-                lng: 2.294531041509247,
-                title: "Paris",
-                desc: "<img src='/img/eiffel_tower.jpg' width='200'><p>The beautiful Eiffel Tower lit up at night!</p>"
-            }
         ];
 
         this.actions = [];
@@ -43,6 +37,11 @@ class FormManager {
 
         this.gridLayer = null;
         this.gridSize = null;
+
+        this.items = document.querySelectorAll('.contrib .item[data-cat]');
+
+        this.pic = document.getElementById('pic');
+        this.uploadCard  = document.getElementById('uploadCard');
 
         this.init();
     }
@@ -60,6 +59,7 @@ class FormManager {
         this.map.setView([51.05, -0.09], 1);
 
         L.tileLayer('/tiles/{z}/{x}/{y}.png', {
+            minZoom: 1,
             maxZoom: 15,
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(this.map);
@@ -85,6 +85,21 @@ class FormManager {
     }
 
 
+
+    uploadPic() {
+        this.pic.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            this.uploadCard.style.backgroundImage = `url("${reader.result}")`;
+            this.uploadCard.classList.add('has-image');
+        };
+        reader.readAsDataURL(file);
+        });
+        this.uploadCard.addEventListener('click', () => pic.click());
+    }
+
     addGrid(cellSizeDeg = 1) {
         this.gridSize = Number(cellSizeDeg) || 0;
         if (!isFinite(cellSizeDeg) || cellSizeDeg <= 0) {
@@ -99,7 +114,7 @@ class FormManager {
         const normalize = (lng) => (((lng + 180) % 360 + 360) % 360) - 180;
         this.drawGrid(normalize);
 
-        this.map.on('moveend zoomed resize', this.drawGrid(normalize));
+        this.map.on('moveend zoomed resize', () => this.drawGrid(normalize));
     }
 
     drawGrid(normalize) {
@@ -455,7 +470,7 @@ class FormManager {
             .slice(0, 8);
 
         this.leaderboard.innerHTML = `
-            <h4>Eco Battle</h4>
+            <h4>Eco Dominion</h4>
             ${top.map(([c, s]) => `<div class="row"><span>${this.escape(c)}</span><b>${s}</b></div>`).join('')}
         `;
 

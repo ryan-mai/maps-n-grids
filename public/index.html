@@ -1,24 +1,65 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Cluste</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
-  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <meta charset="utf-8" />
+    <title>Eco Dominion</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" rel="stylesheet" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" rel="stylesheet" />
-  
-  <script src="https://unpkg.com/@turf/turf@7.2.0/turf.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
-  <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" rel="stylesheet" />
+
+    <script src="https://unpkg.com/@turf/turf@7.2.0/turf.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="map"></div>
+  <div class="wrap">
+    <div class="grid">
+
+      <section class="card stack latlon-stack">
+        <div class="card-sm">
+          <div class="label">Enter city or country</div>
+          <div class="input-wrap">
+            <input type="text" placeholder="e.g., Paris, France - DOES NOT WORK" />
+          </div>
+        </div>
+
+      </section>
+
+      <section class="card siege">
+        <div class="label">Siege Week 10</div>
+        <div class="big">Eco<br/>Dominion</div>
+      </section>
+
+      <section class="card about">
+        <div class="label">About</div>
+        <div class="big">Battle for<br/>our planet</div>
+      </section>
+
+      <section id="uploadCard" class="card upload-card upload">
+        <div class="label">Upload Image</div>
+        <div class="big">Image</div>
+        <input class="hidden-file" type="file" accept="image/*" aria-label="Upload image" />
+      </section>
+
+      <section class="map-card" id="map"></section>
+
+      <section class="card contrib">
+        <div class="title">Contribution</div>
+        <div class="list">
+          <div class="item"></div>
+          <div data-cat="animal" class="item">Pet Rescue 🐶</div>
+          <div data-cat="community" class="item">Community Change 🏨</div>
+          <div data-cat="waste" class="item">Waste &amp; Pollution 🌱</div>
+          <div data-cat="planting" class="item">Water Conservation 💧</div>
+        </div>
+      </section>
+    </div>
     <div id="leaderboard" class="leaderboard"></div>
     <div id="error"></div>
     <form id="form" action="/" method="post" enctype="multipart/form-data">
@@ -35,9 +76,11 @@
             <label for="desc">description</label>
             <input id="desc" name="desc" type="text" required>
         </div>
-        <button type="submit">Submit</button>
+      <button type="submit" class="submit-card" id="submit">Submit</button>
     </form>
-    <script src="turf.js"></script>
-    <script src="main.js"></script>
+  </div>
+
+  <script src="turf.js"></script>
+  <script src="main.js"></script>
 </body>
 </html>
