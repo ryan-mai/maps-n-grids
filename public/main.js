@@ -41,6 +41,9 @@ class FormManager {
 
         this.turf = null;
 
+        this.gridLayer = null;
+        this.gridSize = null;
+
         this.init();
     }
 
@@ -57,7 +60,7 @@ class FormManager {
         this.map.setView([51.05, -0.09], 1);
 
         L.tileLayer('/tiles/{z}/{x}/{y}.png', {
-            maxZoom: 19,
+            maxZoom: 15,
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(this.map);
 
@@ -75,56 +78,58 @@ class FormManager {
         this.mapClick();
         this.changePic();
         this.form.addEventListener('submit', this.handleSubmit.bind(this));
+        
+        this.addGrid(10);
 
         this.updateLeaderboard();
     }
 
 
-    addHexGrid(radiusDeg = 1) {
-        radiusDeg = Number(radiusDeg) || 0;
-        if (!isFinite(radiusDeg) || radiusDeg <= 0) {
-            console.warn('Invalid radiusDeg', radiusDeg);
+    addGrid(cellSizeDeg = 1) {
+        this.gridSize = Number(cellSizeDeg) || 0;
+        if (!isFinite(cellSizeDeg) || cellSizeDeg <= 0) {
+            console.warn('Invalid cellSizeDeg', cellSizeDeg);
             return;
         }
-        if (this.hexLayer) this.map.removeLayer(this.hexLayer);
 
-        const group = L.layerGroup();
-        const bounds = this.map.getBounds().pad(1);
+        if (this.gridLayer) this.map.removeLayer(this.gridLayer);
 
-        const south = bounds.getSouth();
-        const north = bounds.getNorth();
-        const west = bounds.getWest();
-        const east = bounds.getEast();
+        this.gridLayer = L.layerGroup().addTo(this.map);
 
-        if (east < west) east += 360;
+        const normalize = (lng) => (((lng + 180) % 360 + 360) % 360) - 180;
+        this.drawGrid(normalize);
 
-        const rowGap = 1.5 * radiusDeg; // height = 2r
-        const colGap = 2 * radiusDeg * Math.cos(Math.PI / 6); // width = 2r * cos(pi/6)
+        this.map.on('moveend zoomed resize', this.drawGrid(normalize));
+    }
 
-        const totalCols = Math.max(1, Math.ceil((east- west) / Math.max(1e-9, colGap)));
-        const totalRows = Math.max(1, Math.ceil((north- south) / Math.max(1e-9, rowGap)));
-        const totalCells = totalCols * totalRows;
-        const maxCells = 5000;
+    drawGrid(normalize) {
+        this.gridLayer.clearLayers();
 
-        if (totalCells > maxCells) {
-            console.warn(`Too many cells ${totalCells} > ${maxCells}`);
-            return;
+        const b = this.map.getBounds();
+        let minLat = Math.floor(b.getSouth() / this.gridSize) * this.gridSize;
+        let maxLat = Math.ceil(b.getNorth() / this.gridSize) * this.gridSize;
+        let minLng = Math.floor(b.getWest() / this.gridSize) * this.gridSize;
+        let maxLng = Math.ceil(b.getEast() / this.gridSize) * this.gridSize;
+    
+        if (b.getEast() < b.getWest()) maxLng += 360;
+
+        const line = {
+        color: '#444',
+        weight: 2,
+        opacity: 0.25,
+        interactive: false
         }
-        let rowIdx = 0;
-        for (let lat = south; lat <= north; lat += rowGap) {
-            const offset = (rowIdx % 2 === 0) ? 0 : colGap / 2;
-            for (let lng = west + offset; lng <= east; lng += colGap) {
-                const hex = this.hexPolygon(lat, lng, radiusDeg);
-                group.addLayer(L.polygon(hex, {
-                    color: '#999',
-                    weight: 1,
-                    fillOpacity: 0,
-                    interactive: false,
-                }));
-            }
-            rowIdx++;
+
+        for (let lng = minLng; lng <= maxLng; lng += this.gridSize) {
+            const lngNorm = normalize(lng);
+            const lines = L.polyline([[minLat, lngNorm], [maxLat, lngNorm]], line);
+            this.gridLayer.addLayer(lines);
         }
-        this.hexLayer = group.addTo(this.map);
+
+        for (let lat = minLat; lat <= maxLat; lat += this.gridSize) {
+            const lines = L.polyline([[lat, minLng], [lat, maxLng]], line);
+            this.gridLayer.addLayer(lines);
+        }
     }
 
     hexPolygon(lat, lng, radius) {

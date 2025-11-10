@@ -1,10 +1,11 @@
 class TurfHelper {
-    constructor(map, getTripsFn = () => [], getActionsFn = () => []) {
+    constructor(map, getTripsFn = () => [], getActionsFn = () => [], colorsMap = {}) {
         this.map = map;
         this.getTrips = getTripsFn;
         this.getActions = getActionsFn;
         this.countryBoundaries = null;
         this.countryLayer = null;
+        this.colorsMap = colorsMap || {};
     }
 
     async loadCountries() {
@@ -50,6 +51,16 @@ class TurfHelper {
         return counts;
     }
 
+    _getCountryColor(name) {
+        if (!name) return 'hsl(0, 0%, 75%)';
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+        }
+        const hue = hash % 360;
+        return `hsl(${hue}, 65%, 55%)`;
+    }
+
     drawPolygons() {
         if (!this.countryBoundaries) return;
         if (this.countryLayer) {
@@ -61,21 +72,23 @@ class TurfHelper {
         }
         const counts = this.getCountryCounts();
         const max = Math.max(...Object.values(counts), 1);
+        
+        const styleFor = (feature) => {
+            const name = feature.properties?.name;
+            const val = counts[name] || 0;
+
+            const baseColor = this._getCountryColor(name);
+
+            return {
+                color: '#444',
+                weight: 1,
+                fillColor: baseColor,
+                fillOpacity: val ? 0.6 : 0.0
+            };
+        };
+
         this.countryLayer = L.geoJSON(this.countryBoundaries, {
-            style: feature => {
-                const name = feature.properties?.name;
-                const val = counts[name] || 0;
-                const ratio = val / max;
-                const color = val
-                    ? `rgb(${255 * ratio}, ${80 + 50 * (1 - ratio)}, ${255 * (1 - ratio)})`
-                    : 'rgba(0,0,0,0)';
-                return {
-                    color: '#444',
-                    weight: 1,
-                    fillColor: color,
-                    fillOpacity: val ? 0.6 : 0
-                };
-            },
+            style: styleFor,
             onEachFeature: (feature, layer) => {
                 const name = feature.properties?.name;
                 const val = counts[name] || 0;
